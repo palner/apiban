@@ -15,8 +15,8 @@ if [ ! -e "${CONFIG}" ] ; then
 fi
 
 # APIKEY and last known ID are stored in apibanconfig.sys
-APIKEY=`grep "APIKEY" apibanconfig.sys | cut -d '=' -f 2`
-LKID=`grep "LKID" apibanconfig.sys | cut -d '=' -f 2`
+APIKEY=$(grep "APIKEY" $CONFIG | cut -d '=' -f 2)
+LKID=$(grep "LKID" $CONFIG | cut -d '=' -f 2)
 
 # Exit if no APIKEY
 if [ -v "$APIKEY" ] ; then
@@ -36,6 +36,7 @@ if [ -z "$CURRIPS" ] ; then
     LKID=100
     iptables -N APIBAN
     iptables -I INPUT -j APIBAN
+    iptables -I FORWARD -j APIBAN
 fi
 
 IPADDRESS=$(curl -s https://apiban.org/api/$APIKEY/banned/$LKID | jq -r ".ipaddress?")
