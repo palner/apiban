@@ -30,7 +30,7 @@ cat > /etc/logrotate.d/apiban-client << EOF
 EOF
 ```
 
-Example crontab running every 5 min...
+Example crontab running every 4 min...
 
 ```bash
 # update apiban iptables
