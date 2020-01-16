@@ -150,14 +150,14 @@ func main() {
 		}
 
 		// Add APIBAN chain to INPUT
-		err = ipt.Insert("filter", "INPUT", 0, "-j", chain)
+		err = ipt.Insert("filter", "INPUT", 1, "-j", chain)
 		if err != nil {
 			log.Panic(err)
 			runtime.Goexit()
 		}
 
 		// Add APIBAN chain to FORWARD
-		err = ipt.Insert("filter", "FORWARD", 0, "-j", chain)
+		err = ipt.Insert("filter", "FORWARD", 1, "-j", chain)
 		if err != nil {
 			log.Panic(err)
 			runtime.Goexit()
