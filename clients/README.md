@@ -34,6 +34,7 @@ Example crontab running every 4 min...
 
 ```bash
 # update apiban iptables
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */4 * * * * /usr/local/bin/apiban/apiban-iptables-client >/dev/null 2>&1
 ```
 
