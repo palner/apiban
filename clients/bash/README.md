@@ -1,5 +1,7 @@
 # Client - bash #
 
+Use the GO client if you can... the bash script is suitable for a template. **Not recommended for production.**
+
 Bash script to check apiban API and block returned IP addresses with **iptables**.
 
 ## How to use ##
