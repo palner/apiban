@@ -92,11 +92,15 @@ func main() {
 		runtime.Goexit()
 	}
 
-	// allow FULL to reset LKID to 100
-	arg1 := os.Args[1]
-	if arg1 == "FULL" {
-		log.Print("CLI of FULL received, resetting LKID")
-		apiconfig.LKID = "100"
+	// allow cli of FULL to reset LKID to 100
+	if len(os.Args) > 1 {
+		arg1 := os.Args[1]
+		if arg1 == "FULL" {
+			log.Print("CLI of FULL received, resetting LKID")
+			apiconfig.LKID = "100"
+		}
+	} else {
+		log.Print("no command line arguments received")
 	}
 
 	// if no LKID, reset it to 100
