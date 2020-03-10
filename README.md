@@ -89,3 +89,12 @@ Lastly, we can use these IPs to block unwanted traffic. For example, if you were
 			exit;
 		}
 ```
+
+**Bonus:** Want to run APIBAN at start-up? Using the *htable:mod-init* event_route built into Kamailio, you can pre-load the APIBAN htable at start-up:
+
+```
+event_route[htable:mod-init] {
+	# pre load apiban
+	route(APIBAN);
+}
+```
