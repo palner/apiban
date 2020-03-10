@@ -84,7 +84,7 @@ Lastly, we can use these IPs to block unwanted traffic. For example, if you were
 
 ```
 		if($sht(apiban=>$si)!=$null) {
-			\\ ip is blocked from apiban.org
+			// ip is blocked from apiban.org
 			xdbg("request from apiban.org blocked IP - $rm from $fu (IP:$si:$sp)\n");
 			exit;
 		}
