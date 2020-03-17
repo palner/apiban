@@ -209,7 +209,7 @@ func main() {
 	}
 
 	// Update the config with the updated LKID
-	UpdateConfig := bytes.Replace(ConfigValues, []byte(apiconfig.LKID), []byte(ApibanResults.ID), -1)
+	UpdateConfig := bytes.Replace(ConfigValues, []byte("\""+apiconfig.LKID+"\""), []byte("\""+ApibanResults.ID+"\""), -1)
 	if err = ioutil.WriteFile("/usr/local/bin/apiban/config.json", UpdateConfig, 0666); err != nil {
 		log.Panic(err)
 		runtime.Goexit()
