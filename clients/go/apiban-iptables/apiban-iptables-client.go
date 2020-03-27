@@ -27,20 +27,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"runtime"
 
 	"github.com/coreos/go-iptables/iptables"
+	"github.com/palner/apiban/clients/go/apiban"
 )
 
-// structure for the APIBAN.org banned results
-type ApibanStruct struct {
-	ID  string   `json:"ID"`
-	IPS []string `json:"ipaddress"`
-}
-
-// structure for the JSON config file
+// ApibanConfig is the structure for the JSON config file
 type ApibanConfig struct {
 	APIKEY  string `json:"APIKEY"`
 	LKID    string `json:"LKID"`
@@ -84,7 +78,9 @@ func main() {
 	// get config values
 	ConfigValues, _ := ioutil.ReadAll(ConfigFile)
 	var apiconfig ApibanConfig
-	json.Unmarshal(ConfigValues, &apiconfig)
+	if err := json.Unmarshal(ConfigValues, &apiconfig); err != nil {
+		log.Fatalln("failed to parse config:", err)
+	}
 
 	// if no APIKEY, exit
 	if len(apiconfig.APIKEY) == 0 {
@@ -165,41 +161,23 @@ func main() {
 	}
 
 	// Get list of banned ip's from APIBAN.org
-	ApibanURL := "https://apiban.org/api/" + apiconfig.APIKEY + "/banned/" + apiconfig.LKID
-	resp, err := http.Get(ApibanURL)
+	res, err := apiban.Banned(apiconfig.APIKEY, apiconfig.LKID)
 	if err != nil {
 		log.Panic(err)
-		runtime.Goexit()
-	}
-	defer resp.Body.Close()
-
-	curlBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Panic(err)
-		runtime.Goexit()
-	} else {
-		log.Print(string(curlBody))
 	}
 
-	var ApibanResults ApibanStruct
-	json.Unmarshal([]byte(curlBody), &ApibanResults)
-
-	if len(ApibanResults.IPS) == 0 {
+	if len(res.IPs) == 0 {
 		log.Print("No IP addresses detected. Exiting.")
-		runtime.Goexit()
+		os.Exit(0)
 	}
 
-	if len(ApibanResults.ID) == 0 {
-		log.Print("No Control ID found.")
-	}
-
-	if ApibanResults.ID == "none" {
+	if res.ID == "none" {
 		log.Print("Great news... no new bans to add. Exiting...")
-		runtime.Goexit()
+		os.Exit(0)
 	}
 
-	for i := range ApibanResults.IPS {
-		blockedip := ApibanResults.IPS[i] + "/32"
+	for _, ip := range res.IPs {
+		blockedip := ip + "/32"
 		err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", "REJECT")
 		if err != nil {
 			log.Print("Adding rule failed. ", err.Error())
@@ -209,7 +187,7 @@ func main() {
 	}
 
 	// Update the config with the updated LKID
-	UpdateConfig := bytes.Replace(ConfigValues, []byte("\""+apiconfig.LKID+"\""), []byte("\""+ApibanResults.ID+"\""), -1)
+	UpdateConfig := bytes.Replace(ConfigValues, []byte("\""+apiconfig.LKID+"\""), []byte("\""+res.ID+"\""), -1)
 	if err = ioutil.WriteFile("/usr/local/bin/apiban/config.json", UpdateConfig, 0666); err != nil {
 		log.Panic(err)
 		runtime.Goexit()
