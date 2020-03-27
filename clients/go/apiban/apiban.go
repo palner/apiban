@@ -22,9 +22,11 @@
 package apiban
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -68,10 +70,6 @@ func Banned(key string, startFrom string) (*Entry, error) {
 
 	for {
 		e, err := queryServer(http.DefaultClient, fmt.Sprintf("%s%s/banned/%s", RootURL, key, out.ID))
-		if err == ErrBadRequest {
-			// End of list
-			return out, nil
-		}
 		if err != nil {
 			return nil, err
 		}
@@ -124,9 +122,9 @@ func queryServer(c *http.Client, u string) (*Entry, error) {
 	}
 	defer resp.Body.Close()
 
-	// Error code 400 is special for Check errors, indicating the IP address is not blacklisted, so we return a sentinel error here
-	if resp.StatusCode == 400 {
-		return nil, ErrBadRequest
+	// StatusBadRequest (400) has a number of special cases to handle
+	if resp.StatusCode == http.StatusBadRequest {
+		return processBadRequest(resp)
 	}
 	if resp.StatusCode > 400 && resp.StatusCode < 500 {
 		return nil, fmt.Errorf("client error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
@@ -142,5 +140,65 @@ func queryServer(c *http.Client, u string) (*Entry, error) {
 	if err = json.NewDecoder(resp.Body).Decode(entry); err != nil {
 		return nil, fmt.Errorf("failed to decode server response: %w", err)
 	}
+
 	return entry, nil
+}
+
+func processBadRequest(resp *http.Response) (*Entry, error) {
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Read the bytes buffer into a new bytes.Reader
+	r := bytes.NewReader(buf.Bytes())
+
+	// First, try decoding as a normal entry
+	e := new(Entry)
+	if err := json.NewDecoder(r).Decode(e); err == nil {
+		// Successfully decoded normal entry
+
+		switch e.ID {
+		case "none":
+			// non-error case
+		case "unauthorized":
+			return nil, errors.New("unauthorized")
+		default:
+			// unhandled case
+			return nil, ErrBadRequest
+		}
+
+		if len(e.IPs) > 0 {
+			switch e.IPs[0] {
+			case "no new bans":
+				return e, nil
+			}
+		}
+
+		// Unhandled case
+		return nil, ErrBadRequest
+	}
+
+	// Next, try decoding as an errorEntry
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("failed to re-seek to beginning of response buffer: %w", err)
+	}
+
+	type errorEntry struct {
+		AddressCode string `json:"ipaddress"`
+		IDCode      string `json:"ID"`
+	}
+
+	ee := new(errorEntry)
+	if err := json.NewDecoder(r).Decode(ee); err != nil {
+		return nil, fmt.Errorf("failed to decode Bad Request response: %w", err)
+	}
+
+	switch ee.AddressCode {
+	case "rate limit exceeded":
+		return nil, errors.New("rate limit exceeded")
+	default:
+		// unhandled case
+		return nil, ErrBadRequest
+	}
 }
