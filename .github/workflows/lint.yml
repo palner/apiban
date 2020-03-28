@@ -1,0 +1,22 @@
+name: lint
+
+on: [push, pull_request]
+
+jobs:
+   lint:
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v2
+         - name: Set up Go
+           uses: actions/setup-go@v1
+           with:
+              go-version: 1.14.x
+         - name: Install golangci-lint
+           run: |
+              mkdir -p $HOME/bin
+              curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $HOME/bin v1.23.8
+         - name: Go Lint
+           run: |
+              cd clients/go
+              $HOME/bin/golangci-lint run

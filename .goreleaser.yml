@@ -1,0 +1,27 @@
+project_name: apiban
+builds:
+   - id: apibin-iptables-client
+     binary: apibin-iptables-client
+     dir: clients/go/apiban-iptables
+     env:
+        - CGO_ENABLED=0
+     goos:
+        - windows
+        - darwin
+        - linux
+     goarch:
+        - amd64
+
+archives:
+   - id: apiban-iptables-client
+     builds:
+        - apibin-iptables-client
+     format: binary
+checksum:
+   name_template: 'checksums.txt'
+changelog:
+   sort: asc
+   filters:
+      exclude:
+         - '^docs:'
+         - '^test:'
