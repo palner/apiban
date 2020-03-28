@@ -22,183 +22,41 @@
 package apiban
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
+	"net"
+	"time"
 )
 
-const (
-	// RootURL is the base URI of the APIBAN.org API server
-	RootURL = "https://apiban.org/api/"
-)
+// Store defines and interface for storing and retrieving entries in the APIBan database, local or remote
+type Store interface {
 
-// ErrBadRequest indicates a 400 response was received;
-//
-// NOTE: this is used by the server to indicate both that an IP address is not
-// blocked (when calling Check) and that the list is complete (when calling
-// Banned)
-var ErrBadRequest = errors.New("Bad Request")
+	// Add inserts the given Listing into the store
+	Add(l *Listing) (*Listing, error)
 
-// Entry describes a set of blocked IP addresses from APIBAN.org
-type Entry struct {
+	// Exists checks to see whether the given IP matches a Listing in the store, returning the first matching Listing.
+	Exists(ip net.IP) (*Listing, error)
 
-	// ID is the timestamp of the next Entry
-	ID string `json:"ID"`
+	// List retrieves the contents of the store
+	List() ([]*Listing, error)
 
-	// IPs is the list of blocked IP addresses in this entry
-	IPs []string `json:"ipaddress"`
+	// ListFromTime retrieves the contents of the store from the given timestamp
+	ListFromTime(t time.Time) ([]*Listing, error)
+
+	// Remove deletes the given Listing from the store.
+	Remove(id string) error
+
+	// Reset empties the store
+	Reset() error
 }
 
-// Banned returns a set of banned addresses, optionally limited to the
-// specified startFrom ID.  If no startFrom is supplied, the entire current list will
-// be pulled.
-func Banned(key string, startFrom string) (*Entry, error) {
-	if key == "" {
-		return nil, errors.New("API Key is required")
-	}
+// Listing is an individually-listed IP address or subnet
+type Listing struct {
 
-	if startFrom == "" {
-		startFrom = "100" // NOTE: arbitrary ID copied from reference source
-	}
+	// ID is the unique identifier for this Listing; for official APIBAN v1 entries, this is simply the IP address.
+	ID string
 
-	out := &Entry{
-		ID: startFrom,
-	}
+	// Timestamp is the time at which this Listing was added to the apiban.org database
+	Timestamp time.Time
 
-	for {
-		e, err := queryServer(http.DefaultClient, fmt.Sprintf("%s%s/banned/%s", RootURL, key, out.ID))
-		if err != nil {
-			return nil, err
-		}
-
-		if e.ID == "none" {
-			// List complete
-			return out, nil
-		}
-		if e.ID == "" {
-			return nil, errors.New("empty ID received")
-		}
-
-		// Set the next ID
-		out.ID = e.ID
-
-		// Aggregate the received IPs
-		out.IPs = append(out.IPs, e.IPs...)
-	}
-}
-
-// Check queries APIBAN.org to see if the provided IP address is blocked.
-func Check(key string, ip string) (bool, error) {
-	if key == "" {
-		return false, errors.New("API Key is required")
-	}
-	if ip == "" {
-		return false, errors.New("IP address is required")
-	}
-
-	entry, err := queryServer(http.DefaultClient, fmt.Sprintf("%s%s/check/%s", RootURL, key, ip))
-	if err == ErrBadRequest {
-		// Not blocked
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if entry == nil {
-		return false, errors.New("empty entry received")
-	}
-
-	// IP address is blocked
-	return true, nil
-}
-
-func queryServer(c *http.Client, u string) (*Entry, error) {
-	resp, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// StatusBadRequest (400) has a number of special cases to handle
-	if resp.StatusCode == http.StatusBadRequest {
-		return processBadRequest(resp)
-	}
-	if resp.StatusCode > 400 && resp.StatusCode < 500 {
-		return nil, fmt.Errorf("client error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
-	}
-	if resp.StatusCode >= 500 {
-		return nil, fmt.Errorf("server error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
-	}
-	if resp.StatusCode > 299 {
-		return nil, fmt.Errorf("unhandled error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
-	}
-
-	entry := new(Entry)
-	if err = json.NewDecoder(resp.Body).Decode(entry); err != nil {
-		return nil, fmt.Errorf("failed to decode server response: %w", err)
-	}
-
-	return entry, nil
-}
-
-func processBadRequest(resp *http.Response) (*Entry, error) {
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(resp.Body); err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Read the bytes buffer into a new bytes.Reader
-	r := bytes.NewReader(buf.Bytes())
-
-	// First, try decoding as a normal entry
-	e := new(Entry)
-	if err := json.NewDecoder(r).Decode(e); err == nil {
-		// Successfully decoded normal entry
-
-		switch e.ID {
-		case "none":
-			// non-error case
-		case "unauthorized":
-			return nil, errors.New("unauthorized")
-		default:
-			// unhandled case
-			return nil, ErrBadRequest
-		}
-
-		if len(e.IPs) > 0 {
-			switch e.IPs[0] {
-			case "no new bans":
-				return e, nil
-			}
-		}
-
-		// Unhandled case
-		return nil, ErrBadRequest
-	}
-
-	// Next, try decoding as an errorEntry
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return nil, fmt.Errorf("failed to re-seek to beginning of response buffer: %w", err)
-	}
-
-	type errorEntry struct {
-		AddressCode string `json:"ipaddress"`
-		IDCode      string `json:"ID"`
-	}
-
-	ee := new(errorEntry)
-	if err := json.NewDecoder(r).Decode(ee); err != nil {
-		return nil, fmt.Errorf("failed to decode Bad Request response: %w", err)
-	}
-
-	switch ee.AddressCode {
-	case "rate limit exceeded":
-		return nil, errors.New("rate limit exceeded")
-	default:
-		// unhandled case
-		return nil, ErrBadRequest
-	}
+	// IP is the IP address or IP network which is in the apiban.org database
+	IP net.IPNet
 }

@@ -29,6 +29,8 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
+	"time"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/palner/apiban/clients/go/apiban"
@@ -120,24 +122,26 @@ func main() {
 		log.Fatalln("failed to initialize IPTables:", err)
 	}
 
+	lastTimestamp, err := strconv.ParseInt(apiconfig.LKID, 10, 64)
+	if err != nil {
+		// If we don't have a valid timestamp, try 1 year ago
+		lastTimestamp = time.Now().AddDate(-1, 0, 0).Unix()
+	}
+
 	// Get list of banned ip's from APIBAN.org
-	res, err := apiban.Banned(apiconfig.APIKEY, apiconfig.LKID)
+	list, err := apiban.NewOfficialStore(apiconfig.APIKEY).ListFromTime(time.Unix(lastTimestamp, 0))
 	if err != nil {
 		log.Fatalln("failed to get banned list:", err)
 	}
 
-	if res.ID == apiconfig.LKID {
+	if len(list) == 0 {
 		log.Print("Great news... no new bans to add. Exiting...")
 		os.Exit(0)
 	}
 
-	if len(res.IPs) == 0 {
-		log.Print("No IP addresses detected. Exiting.")
-		os.Exit(0)
-	}
+	for _, l := range list {
+		blockedip := l.IP.String()
 
-	for _, ip := range res.IPs {
-		blockedip := ip + "/32"
 		err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", "REJECT")
 		if err != nil {
 			log.Print("Adding rule failed. ", err.Error())
@@ -147,7 +151,7 @@ func main() {
 	}
 
 	// Update the config with the updated LKID
-	apiconfig.LKID = res.ID
+	apiconfig.LKID = strconv.FormatInt(list[len(list)-1].Timestamp.Unix(), 10)
 	if err := apiconfig.Update(); err != nil {
 		log.Fatalln(err)
 	}
