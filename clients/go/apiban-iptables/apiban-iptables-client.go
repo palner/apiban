@@ -84,8 +84,7 @@ func main() {
 
 	// if no APIKEY, exit
 	if len(apiconfig.APIKEY) == 0 {
-		log.Print("Invalid APIKEY. Exiting.")
-		runtime.Goexit()
+		log.Fatalln("Invalid APIKEY. Exiting.")
 	}
 
 	// allow cli of FULL to reset LKID to 100
@@ -109,14 +108,12 @@ func main() {
 	ipt, err := iptables.New()
 	if err != nil {
 		log.Panic(err)
-		runtime.Goexit()
 	}
 
 	// Get existing chains from IPTABLES
 	originaListChain, err := ipt.ListChains("filter")
 	if err != nil {
 		log.Panic(err)
-		runtime.Goexit()
 	}
 
 	// Search for INPUT in IPTABLES
@@ -142,37 +139,35 @@ func main() {
 		err = ipt.ClearChain("filter", chain)
 		if err != nil {
 			log.Panic(err)
-			runtime.Goexit()
 		}
 
 		// Add APIBAN chain to INPUT
 		err = ipt.Insert("filter", "INPUT", 1, "-j", chain)
 		if err != nil {
 			log.Panic(err)
-			runtime.Goexit()
 		}
 
 		// Add APIBAN chain to FORWARD
 		err = ipt.Insert("filter", "FORWARD", 1, "-j", chain)
 		if err != nil {
 			log.Panic(err)
-			runtime.Goexit()
 		}
 	}
 
 	// Get list of banned ip's from APIBAN.org
 	res, err := apiban.Banned(apiconfig.APIKEY, apiconfig.LKID)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalln("failed to get banned list:", err)
+	}
+	log.Print("got response")
+
+	if res.ID == apiconfig.LKID {
+		log.Print("Great news... no new bans to add. Exiting...")
+		os.Exit(0)
 	}
 
 	if len(res.IPs) == 0 {
 		log.Print("No IP addresses detected. Exiting.")
-		os.Exit(0)
-	}
-
-	if res.ID == "none" {
-		log.Print("Great news... no new bans to add. Exiting...")
 		os.Exit(0)
 	}
 
