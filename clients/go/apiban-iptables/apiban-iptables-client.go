@@ -22,10 +22,10 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
@@ -34,11 +34,21 @@ import (
 	"github.com/palner/apiban/clients/go/apiban"
 )
 
+var configFileLocation string
+var logFile string
+
+func init() {
+	flag.StringVar(&configFileLocation, "config", "", "location of configuration file")
+	flag.StringVar(&logFile, "log", "/var/log/apiban-client.log", "location of log file or - for stdout")
+}
+
 // ApibanConfig is the structure for the JSON config file
 type ApibanConfig struct {
 	APIKEY  string `json:"APIKEY"`
 	LKID    string `json:"LKID"`
 	VERSION string `json:"VERSION"`
+
+	sourceFile string
 }
 
 // Function to see if string within string
@@ -52,38 +62,34 @@ func contains(list []string, value string) bool {
 }
 
 func main() {
-	defer os.Exit(0)
-	// Open our Log
-	logfile, err := os.OpenFile("/var/log/apiban-client.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Panic(err)
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		runtime.Goexit()
-	}
-	defer logfile.Close()
+	flag.Parse()
 
-	log.SetOutput(logfile)
+	defer os.Exit(0)
+
+	// Open our Log
+	if logFile != "-" && logFile != "stdout" {
+		lf, err := os.OpenFile("/var/log/apiban-client.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Panic(err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			runtime.Goexit()
+		}
+		defer lf.Close()
+
+		log.SetOutput(lf)
+	}
+
 	log.Print("** Started APIBAN CLIENT")
 	log.Print("Licensed under GPLv2. See LICENSE for details.")
 
 	// Open our config file
-	ConfigFile, err := os.Open("/usr/local/bin/apiban/config.json")
+	apiconfig, err := LoadConfig()
 	if err != nil {
-		log.Panic(err)
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		runtime.Goexit()
-	}
-	defer ConfigFile.Close()
-
-	// get config values
-	ConfigValues, _ := ioutil.ReadAll(ConfigFile)
-	var apiconfig ApibanConfig
-	if err := json.Unmarshal(ConfigValues, &apiconfig); err != nil {
-		log.Fatalln("failed to parse config:", err)
+		log.Fatalln(err)
 	}
 
 	// if no APIKEY, exit
-	if len(apiconfig.APIKEY) == 0 {
+	if apiconfig.APIKEY == "" {
 		log.Fatalln("Invalid APIKEY. Exiting.")
 	}
 
@@ -110,48 +116,8 @@ func main() {
 		log.Panic(err)
 	}
 
-	// Get existing chains from IPTABLES
-	originaListChain, err := ipt.ListChains("filter")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// Search for INPUT in IPTABLES
-	chain := "INPUT"
-	if !contains(originaListChain, chain) {
-		log.Print("IPTABLES doesn't contain the chain ", chain)
-		runtime.Goexit()
-	}
-
-	// Search for FORWARD in IPTABLES
-	chain = "FORWARD"
-	if !contains(originaListChain, chain) {
-		log.Print("IPTABLES doesn't contain the chain ", chain)
-		runtime.Goexit()
-	}
-
-	// Search for APIBAN in IPTABLES
-	chain = "APIBAN"
-	if !contains(originaListChain, chain) {
-		log.Print("IPTABLES doesn't contain APIBAN. Creating now...")
-
-		// Add APIBAN chain
-		err = ipt.ClearChain("filter", chain)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		// Add APIBAN chain to INPUT
-		err = ipt.Insert("filter", "INPUT", 1, "-j", chain)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		// Add APIBAN chain to FORWARD
-		err = ipt.Insert("filter", "FORWARD", 1, "-j", chain)
-		if err != nil {
-			log.Panic(err)
-		}
+	if err := initializeIPTables(ipt); err != nil {
+		log.Fatalln("failed to initialize IPTables:", err)
 	}
 
 	// Get list of banned ip's from APIBAN.org
@@ -159,7 +125,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("failed to get banned list:", err)
 	}
-	log.Print("got response")
 
 	if res.ID == apiconfig.LKID {
 		log.Print("Great news... no new bans to add. Exiting...")
@@ -182,12 +147,113 @@ func main() {
 	}
 
 	// Update the config with the updated LKID
-	UpdateConfig := bytes.Replace(ConfigValues, []byte("\""+apiconfig.LKID+"\""), []byte("\""+res.ID+"\""), -1)
-	if err = ioutil.WriteFile("/usr/local/bin/apiban/config.json", UpdateConfig, 0666); err != nil {
-		log.Panic(err)
-		runtime.Goexit()
+	apiconfig.LKID = res.ID
+	if err := apiconfig.Update(); err != nil {
+		log.Fatalln(err)
 	}
 
 	log.Print("** Done. Exiting.")
-	runtime.Goexit()
+}
+
+// LoadConfig attempts to load the APIBAN configuration file from various locations
+func LoadConfig() (*ApibanConfig, error) {
+	var fileLocations []string
+
+	// If we have a user-specified configuration file, use it preferentially
+	if configFileLocation != "" {
+		fileLocations = append(fileLocations, configFileLocation)
+	}
+
+	// If we can determine the user configuration directory, try there
+	configDir, err := os.UserConfigDir()
+	if err == nil {
+		fileLocations = append(fileLocations, fmt.Sprintf("%s/apiban/config.json", configDir))
+	}
+
+	// Add standard static locations
+	fileLocations = append(fileLocations,
+		"/etc/apiban/config.json",
+		"config.json",
+		"/usr/local/bin/apiban/config.json",
+	)
+
+	for _, loc := range fileLocations {
+		f, err := os.Open(loc)
+		if err != nil {
+			continue
+		}
+		defer f.Close()
+
+		cfg := new(ApibanConfig)
+		if err := json.NewDecoder(f).Decode(cfg); err != nil {
+			return nil, fmt.Errorf("failed to read configuration from %s: %w", loc, err)
+		}
+
+		// Store the location of the config file so that we can update it later
+		cfg.sourceFile = loc
+
+		return cfg, nil
+	}
+
+	return nil, errors.New("failed to locate configuration file")
+}
+
+// Update rewrite the configuration file with and updated state (such as the LKID)
+func (cfg *ApibanConfig) Update() error {
+	f, err := os.Create(cfg.sourceFile)
+	if err != nil {
+		return fmt.Errorf("failed to open configuration file for writing: %w", err)
+	}
+	defer f.Close()
+
+	return json.NewEncoder(f).Encode(cfg)
+}
+
+func initializeIPTables(ipt *iptables.IPTables) error {
+	// Get existing chains from IPTABLES
+	originaListChain, err := ipt.ListChains("filter")
+	if err != nil {
+		return fmt.Errorf("failed to read iptables: %w", err)
+	}
+
+	// Search for INPUT in IPTABLES
+	chain := "INPUT"
+	if !contains(originaListChain, chain) {
+		return errors.New("iptables does not contain expected INPUT chain")
+	}
+
+	// Search for FORWARD in IPTABLES
+	chain = "FORWARD"
+	if !contains(originaListChain, chain) {
+		return errors.New("iptables does not contain expected FORWARD chain")
+	}
+
+	// Search for APIBAN in IPTABLES
+	chain = "APIBAN"
+	if contains(originaListChain, chain) {
+		// APIBAN chain already exists
+		return nil
+	}
+
+	log.Print("IPTABLES doesn't contain APIBAN. Creating now...")
+
+	// Add APIBAN chain
+	err = ipt.ClearChain("filter", chain)
+	if err != nil {
+		return fmt.Errorf("failed to clear APIBAN chain: %w", err)
+	}
+
+	// Add APIBAN chain to INPUT
+	err = ipt.Insert("filter", "INPUT", 1, "-j", chain)
+	if err != nil {
+		return fmt.Errorf("failed to add APIBAN chain to INPUT chain: %w", err)
+	}
+
+	// Add APIBAN chain to FORWARD
+	err = ipt.Insert("filter", "FORWARD", 1, "-j", chain)
+	if err != nil {
+		return fmt.Errorf("failed to add APIBAN chain to FORWARD chain: %w", err)
+	}
+
+	return nil
 }
