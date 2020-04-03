@@ -30,7 +30,7 @@ import (
 	"net/http"
 )
 
-const (
+var (
 	// RootURL is the base URI of the APIBAN.org API server
 	RootURL = "https://apiban.org/api/"
 )
@@ -109,6 +109,11 @@ func Check(key string, ip string) (bool, error) {
 	}
 	if entry == nil {
 		return false, errors.New("empty entry received")
+	} else if len(entry.IPs) == 1 {
+		if entry.IPs[0] == "not blocked" {
+			// Not blocked
+			return false, nil
+		}
 	}
 
 	// IP address is blocked
@@ -118,7 +123,7 @@ func Check(key string, ip string) (bool, error) {
 func queryServer(c *http.Client, u string) (*Entry, error) {
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Query Error: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
@@ -138,7 +143,7 @@ func queryServer(c *http.Client, u string) (*Entry, error) {
 
 	entry := new(Entry)
 	if err = json.NewDecoder(resp.Body).Decode(entry); err != nil {
-		return nil, fmt.Errorf("failed to decode server response: %w", err)
+		return nil, fmt.Errorf("failed to decode server response: %s", err.Error())
 	}
 
 	return entry, nil
@@ -191,7 +196,7 @@ func processBadRequest(resp *http.Response) (*Entry, error) {
 
 	ee := new(errorEntry)
 	if err := json.NewDecoder(r).Decode(ee); err != nil {
-		return nil, fmt.Errorf("failed to decode Bad Request response: %w", err)
+		return nil, fmt.Errorf("failed to decode Bad Request response: %s", err.Error())
 	}
 
 	switch ee.AddressCode {
