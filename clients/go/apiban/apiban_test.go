@@ -41,48 +41,48 @@ var mockServer = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.EscapedPath() {
 	case testPathBannedReturnNothing:
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf("")))
+		_, _ = w.Write([]byte(""))
 		return
 	case testPathBannedReturnNoID:
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf("{}")))
+		_, _ = w.Write([]byte("{}"))
 		return
 	case testPathBannedID:
 		ID = 1234567890
 	case testPathCheckBadIPv4:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("{}")))
+		_, _ = w.Write([]byte("{}"))
 		return
 	case testPathCheckBadIPv6:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("{}")))
+		_, _ = w.Write([]byte("{}"))
 		return
 	case testPathCheckDNS:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("{}")))
+		_, _ = w.Write([]byte("{}"))
 		return
 	case testPathBannedReturn400:
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("{}")))
+		_, _ = w.Write([]byte("{}"))
 		return
 	case testPathBannedReturn500:
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	case testPathBannedBadAuth:
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("{\"ID: \"unauthorized\"}")))
+		_, _ = w.Write([]byte("{\"ID: \"unauthorized\"}"))
 		return
 	case testPathCheckRateLimit:
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(fmt.Sprintf("{\"ipaddress: \"rate limit exceeded\"}")))
+		_, _ = w.Write([]byte("{\"ipaddress: \"rate limit exceeded\"}"))
 		return
 	case testPathCheckUnknown:
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(fmt.Sprintf("{\"ipaddress: \"unknown\"}")))
+		_, _ = w.Write([]byte("{\"ipaddress: \"unknown\"}"))
 		return
 	case testPathBannedNothingNew:
 		w.WriteHeader(http.StatusRequestTimeout)
-		w.Write([]byte(fmt.Sprintf("{\"ipaddress\":[\"no new bans\"], \"ID\":\"none\"}")))
+		_, _ = w.Write([]byte("{\"ipaddress\":[\"no new bans\"], \"ID\":\"none\"}"))
 		return
 	}
 
@@ -94,10 +94,10 @@ var mockServer = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			if counter < 2 {
 				// if the counter is below 5, return data
-				w.Write([]byte(fmt.Sprintf("{\"ipaddress\": [\"1.2.3.251\", \"1.2.3.252\"], \"ID\": \"%d\"}", ID)))
+				_, _ = w.Write([]byte(fmt.Sprintf("{\"ipaddress\": [\"1.2.3.251\", \"1.2.3.252\"], \"ID\": \"%d\"}", ID)))
 			} else {
 				// reset counter, don't return anything
-				w.Write([]byte(fmt.Sprintf("{\"ID\": \"none\"}")))
+				_, _ = w.Write([]byte("{\"ID\": \"none\"}"))
 				counter = 0
 			}
 			return
@@ -108,9 +108,9 @@ var mockServer = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.WriteHeader(http.StatusOK)
 			if r.URL.EscapedPath() == testPathCheck {
-				w.Write([]byte(fmt.Sprintf("{\"ipaddress\":[\"1.2.3.251\"], \"ID\":\"987654321\"}")))
+				_, _ = w.Write([]byte("{\"ipaddress\":[\"1.2.3.251\"], \"ID\":\"987654321\"}"))
 			} else {
-				w.Write([]byte(fmt.Sprintf("{\"ipaddress\":[\"not blocked\"], \"ID\":\"none\"}")))
+				_, _ = w.Write([]byte("{\"ipaddress\":[\"not blocked\"], \"ID\":\"none\"}"))
 			}
 			return
 		}
@@ -118,7 +118,6 @@ var mockServer = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNotFound)
-	return
 })
 
 func TestBanned(t *testing.T) {
