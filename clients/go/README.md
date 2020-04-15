@@ -32,6 +32,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */4 * * * * /usr/local/bin/apiban/apiban-iptables-client >/dev/null 2>&1
 ```
 
+See the [hack](hack/) directory for example systemd units.
+
 ## How it works ##
 
 The client pulls the API key and last known ID from the **config.json** file.
