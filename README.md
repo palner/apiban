@@ -57,7 +57,8 @@ route[APIBAN] {
 
 	// if we dont get a 200 OK from the webserver we will log and exit
 	if($rc!=200) {
-		xlog("L_INFO","APIBAN: No 200 Received. $var(banned)\n");
+		xlog("L_INFO","APIBAN: Non 200 response. $var(banned)\n");
+		xlog("L_INFO","APIBAN: $sht(apibanctl=>blocks) attacks blocked since $(Tb{s.ftime,%Y-%m-%d %H:%M:%S})\n");
 		exit;
 	}
 
@@ -68,14 +69,14 @@ route[APIBAN] {
 		jansson_get("ipaddress[$var(count)]", $var(banned), "$var(blockaddr)");
 		// add the blocked ipaddress to the apiban htable and log
 		$sht(apiban=>$var(blockaddr)) = 1;
-		xlog("L_INFO","API: ipaddress[$var(count)] == $var(blockaddr)\n");
+		xlog("L_INFO","APIBAN: Adding block ipaddress[$var(count)] == $var(blockaddr)\n");
 
 		$var(count) = $var(count) + 1;
 	}
 
 	// lets get our control ID and use it for incremental downloads
 	jansson_get("ID", $var(banned), "$var(apiid)");
-	xlog("L_INFO","ID: $var(apiid)\n");
+	xlog("L_INFO","APIBAN: New ID is $var(apiid)\n");
 	$sht(apibanctl=>ID) = $var(apiid);
 }
 ```
@@ -86,6 +87,7 @@ Lastly, we can use these IPs to block unwanted traffic. For example, if you were
 		if($sht(apiban=>$si)!=$null) {
 			// ip is blocked from apiban.org
 			xdbg("request from apiban.org blocked IP - $rm from $fu (IP:$si:$sp)\n");
+			$sht(apibanctl=>blocks) = $sht(apibanctl=>blocks) + 1;
 			exit;
 		}
 ```
