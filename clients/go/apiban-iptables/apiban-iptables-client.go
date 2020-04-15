@@ -36,8 +36,10 @@ import (
 
 var configFileLocation string
 var logFile string
+var targetChain string
 
 func init() {
+	flag.StringVar(&targetChain, "target", "REJECT", "target chain for matching entries")
 	flag.StringVar(&configFileLocation, "config", "", "location of configuration file")
 	flag.StringVar(&logFile, "log", "/var/log/apiban-client.log", "location of log file or - for stdout")
 }
@@ -138,7 +140,7 @@ func main() {
 
 	for _, ip := range res.IPs {
 		blockedip := ip + "/32"
-		err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", "REJECT")
+		err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", targetChain)
 		if err != nil {
 			log.Print("Adding rule failed. ", err.Error())
 		} else {
