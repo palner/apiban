@@ -100,3 +100,15 @@ event_route[htable:mod-init] {
 	route(APIBAN);
 }
 ```
+
+## Integration with SIP3 ##
+
+[SIP3](https://sip3.io/) is an end-to-end solution for real-time monitor, analysis and troubleshooting of network performance in large volumes of traffic.
+
+*Thanks to the SIP3 architecture design you can have a monitoring set in place that works in front of iptables. So even if the traffic has been blocked you will still be able detect fraud attempts and whitelist wrongly blocked IP addresses.*
+
+Read more: <https://sip3.io/docs/tutorials/HowToInroduceUserDefinedAttribute.html>
+
+## Getting Help ##
+
+Help is provided by LOD (<https://www.lod.com>) and an APIBAN room ([#apiban:matrix.lod.com](https://matrix.to/#/#apiban:matrix.lod.com)) is available on the LOD Matrix homeserver. The software is provided under the GPLv2 license.
