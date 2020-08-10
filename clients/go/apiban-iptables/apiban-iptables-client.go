@@ -118,8 +118,18 @@ func main() {
 		log.Panic(err)
 	}
 
-	if err := initializeIPTables(ipt); err != nil {
+	//	if err := initializeIPTables(ipt); err != nil {
+	//		log.Fatalln("failed to initialize IPTables:", err)
+	//	}
+
+	iptinit, err := initializeIPTables(ipt)
+	if err != nil {
 		log.Fatalln("failed to initialize IPTables:", err)
+	}
+
+	if iptinit == "chain created" {
+		log.Print("APIBAN chain was created - Resetting LKID")
+		apiconfig.LKID = "100"
 	}
 
 	// Get list of banned ip's from APIBAN.org
@@ -211,30 +221,30 @@ func (cfg *ApibanConfig) Update() error {
 	return json.NewEncoder(f).Encode(cfg)
 }
 
-func initializeIPTables(ipt *iptables.IPTables) error {
+func initializeIPTables(ipt *iptables.IPTables) (string, error) {
 	// Get existing chains from IPTABLES
 	originaListChain, err := ipt.ListChains("filter")
 	if err != nil {
-		return fmt.Errorf("failed to read iptables: %w", err)
+		return "error", fmt.Errorf("failed to read iptables: %w", err)
 	}
 
 	// Search for INPUT in IPTABLES
 	chain := "INPUT"
 	if !contains(originaListChain, chain) {
-		return errors.New("iptables does not contain expected INPUT chain")
+		return "error", errors.New("iptables does not contain expected INPUT chain")
 	}
 
 	// Search for FORWARD in IPTABLES
 	chain = "FORWARD"
 	if !contains(originaListChain, chain) {
-		return errors.New("iptables does not contain expected FORWARD chain")
+		return "error", errors.New("iptables does not contain expected FORWARD chain")
 	}
 
 	// Search for APIBAN in IPTABLES
 	chain = "APIBAN"
 	if contains(originaListChain, chain) {
 		// APIBAN chain already exists
-		return nil
+		return "chain exists", nil
 	}
 
 	log.Print("IPTABLES doesn't contain APIBAN. Creating now...")
@@ -242,20 +252,20 @@ func initializeIPTables(ipt *iptables.IPTables) error {
 	// Add APIBAN chain
 	err = ipt.ClearChain("filter", chain)
 	if err != nil {
-		return fmt.Errorf("failed to clear APIBAN chain: %w", err)
+		return "error", fmt.Errorf("failed to clear APIBAN chain: %w", err)
 	}
 
 	// Add APIBAN chain to INPUT
 	err = ipt.Insert("filter", "INPUT", 1, "-j", chain)
 	if err != nil {
-		return fmt.Errorf("failed to add APIBAN chain to INPUT chain: %w", err)
+		return "error", fmt.Errorf("failed to add APIBAN chain to INPUT chain: %w", err)
 	}
 
 	// Add APIBAN chain to FORWARD
 	err = ipt.Insert("filter", "FORWARD", 1, "-j", chain)
 	if err != nil {
-		return fmt.Errorf("failed to add APIBAN chain to FORWARD chain: %w", err)
+		return "error", fmt.Errorf("failed to add APIBAN chain to FORWARD chain: %w", err)
 	}
 
-	return nil
+	return "chain created", nil
 }
