@@ -38,6 +38,26 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */4 * * * * /usr/local/bin/apiban/apiban-iptables-client >/dev/null 2>&1
 ```
 
+# Building on Raspbian Buster #
+
+Since the version of `go` that's in Buster is too old to build `apiban-iptables-client`, here's a simple workaround for `go`.
+
+```
+cd /usr/local/src
+wget https://golang.org/dl/go1.14.7.linux-armv6l.tar.gz
+tar -xzvf go1.14.7.linux-armv6l.tar.gz
+ln -sfn /usr/local/src/go/bin/go /usr/bin/go
+```
+
+Then building of `apiban-iptables-client` is now possible.
+
+```
+cd /usr/local/src
+git clone https://github.com/palner/apiban
+cd apiban/clients/go/apiban-iptables
+go build apiban-iptables-client.go
+```
+
 ## How it works ##
 
 The client pulls the API key and last known ID from the **config.json** file.
