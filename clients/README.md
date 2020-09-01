@@ -6,6 +6,11 @@ The GO client has been tested more than the bash script. It is recommended that 
 
 The GO client is provided as both source code to build and an executable suitable for most nix environments. It assumes that it will be run in `/usr/local/bin/apiban/`.
 
+### UPDATED 01/09/20
+added nftables client for bash(tested on debian 9/10) 
+Go nftables client coming soon!
+
+
 ## Using the GO executable ##
 
 1. Create the folder `/usr/local/bin/apiban`
