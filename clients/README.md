@@ -6,10 +6,10 @@ The GO client has been tested more than the bash script. It is recommended that 
 
 The GO client is provided as both source code to build and an executable suitable for most nix environments. It assumes that it will be run in `/usr/local/bin/apiban/`.
 
-### UPDATED 01/09/20
-added nftables client for bash(tested on debian 9/10) 
-Go nftables client coming soon!
+_**UPDATES 2020-09-01**_
 
+* added nftables client for bash(tested on debian 9/10)
+* Go nftables client coming soon!
 
 ## Using the GO executable ##
 
@@ -43,7 +43,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */4 * * * * /usr/local/bin/apiban/apiban-iptables-client >/dev/null 2>&1
 ```
 
-# Building on Raspbian Buster #
+## Building on Raspbian Buster ##
 
 Since the version of `go` that's in Buster is too old to build `apiban-iptables-client`, here's a simple workaround for `go`.
 
@@ -63,7 +63,7 @@ cd apiban/clients/go/apiban-iptables
 go build apiban-iptables-client.go
 ```
 
-## How it works ##
+### How it works ###
 
 The client pulls the API key and last known ID from the **config.json** file.
 
