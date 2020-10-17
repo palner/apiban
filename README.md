@@ -6,6 +6,8 @@ Visit <https://www.apiban.org/> for more information.
 
 ## Integration into Kamailio ##
 
+[Kamailio](https://github.com/kamailio/kamailio) is an open source implementation of a SIP Signaling Server. SIP is an open standard protocol specified by the IETF. The core specification document is RFC3261.
+
 ### Blocking Banned IPs ###
 
 A loop is used to cycle through the banned IPs. On first download, this list can be quite large and `max_while_loops` will need to be large enough to handle the list.
@@ -102,7 +104,11 @@ event_route[htable:mod-init] {
 ```
 ## Integration with HOMER ##
 
-[HOMER](https://github.com/sipcapture/homer) implements [APIBan](https://github.com/sipcapture/hepsub-apiban) interactions through a dedicated [HEPSub agent](https://github.com/sipcapture/hepsub-apiban) interactively retrieving and caching APIBan API information in memory, and providing total flexibility, extensibility and customization for HEP users and integrators.
+[HOMER](https://github.com/sipcapture/homer) is a robust, carrier-grade, scalable Packet and Event capture system and VoiP/RTC Monitoring Application based on the HEP/EEP protocol and ready to process & store insane amounts of signaling, rtc events, logs and statistics with instant search, end-to-end analysis and drill-down capabilities.
+
+Homer implements [APIBan](https://github.com/sipcapture/hepsub-apiban) interactions through a dedicated [HEPSub agent](https://github.com/sipcapture/hepsub-apiban) interactively retrieving and caching APIBan API information in memory, and providing total flexibility, extensibility and customization for HEP users and integrators.
+
+Read more: <https://github.com/sipcapture/hepsub-apiban>
 
 ## Integration with SIP3 ##
 
@@ -111,6 +117,10 @@ event_route[htable:mod-init] {
 *Thanks to the SIP3 architecture design you can have a monitoring set in place that works in front of iptables. So even if the traffic has been blocked you will still be able detect fraud attempts and whitelist wrongly blocked IP addresses.*
 
 Read more: <https://sip3.io/docs/tutorials/HowToInroduceUserDefinedAttribute.html>
+
+## Integration with IPTABLES ##
+
+APIBAN provides two open source [clients](https://github.com/palner/apiban/tree/master/clients) for integrated into IPTABLES.
 
 ## Getting Help ##
 
