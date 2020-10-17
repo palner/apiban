@@ -100,6 +100,9 @@ event_route[htable:mod-init] {
 	route(APIBAN);
 }
 ```
+## Integration with HOMER ##
+
+[HOMER](https://github.com/sipcapture/homer) implements [APIBan](https://github.com/sipcapture/hepsub-apiban) interactions through a dedicated [HEPSub agent](https://github.com/sipcapture/hepsub-apiban) interactively retrieving and caching APIBan API information in memory, and providing total flexibility, extensibility and customization for HEP users and integrators.
 
 ## Integration with SIP3 ##
 
