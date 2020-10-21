@@ -30,8 +30,7 @@ if [ ! -e "${CONFIG}" ] ; then
 fi
 
 # APIKEY and last known ID are stored in apibanconfig.sys
-APIKEY=$(grep "APIKEY" $CONFIG | cut -d '=' -f 2)
-LKID=$(grep "LKID" $CONFIG | cut -d '=' -f 2)
+source $CONFIG
 
 # Exit if no APIKEY
 if [ -v "$APIKEY" ] ; then
@@ -54,8 +53,9 @@ if [ -z "$CURRIPS" ] ; then
     nft insert rule ip filter FORWARD counter jump APIBAN
 fi
 
-IPADDRESS=$(curl -s https://apiban.org/api/$APIKEY/banned/$LKID | jq -r ".ipaddress?")
-CURRID=$(curl -s https://apiban.org/api/$APIKEY/banned/$LKID | jq -r ".ID?")
+BANLIST=$(curl -s https://apiban.org/api/$APIKEY/banned/$LKID)
+IPADDRESS=$(echo $BANLIST | jq -r ".ipaddress? | .[]")
+CURRID=$(echo $BANLIST | jq -r ".ID?")
 
 # No new bans
 if [ "$CURRID" = "none" ] ; then
@@ -74,14 +74,7 @@ fi
 sed -i "s/^\(LKID=\).*$/\1${CURRID}/" $CONFIG
 
 # parse through IPs
-IPADDRESS=${IPADDRESS//$'\n'/}
-IPADDRESS=${IPADDRESS//$'\"'/}
-IPADDRESS=${IPADDRESS//$'['/}
-IPADDRESS=${IPADDRESS//$']'/}
-IPADDRESS=${IPADDRESS//$', '/}
-
-IPADDRESSARR=($IPADDRESS)
-
+IPADDRESSARR=(${IPADDRESS//$'\"'/})
 for i in "${IPADDRESSARR[@]}"
 do
   NOW=$(date +"%Y-%m-%d %H:%M:%S")
