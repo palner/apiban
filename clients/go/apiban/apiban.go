@@ -127,24 +127,18 @@ func queryServer(c *http.Client, u string) (*Entry, error) {
 	}
 	defer resp.Body.Close()
 
-	// StatusBadRequest (400) has a number of special cases to handle
-	if resp.StatusCode == http.StatusBadRequest {
+	switch {
+	case resp.StatusCode == http.StatusBadRequest ||
+		resp.StatusCode == http.StatusNotFound ||
+		resp.StatusCode == http.StatusForbidden:
 		return processBadRequest(resp)
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
-		return processBadRequest(resp)
-	}
-
-	if resp.StatusCode > 400 && resp.StatusCode < 500 {
+	case resp.StatusCode == http.StatusOK:
+		break
+	case resp.StatusCode > 400 && resp.StatusCode < 500:
 		return nil, fmt.Errorf("client error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
-	}
-
-	if resp.StatusCode >= 500 {
+	case resp.StatusCode >= 500:
 		return nil, fmt.Errorf("server error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
-	}
-
-	if resp.StatusCode > 299 {
+	case resp.StatusCode > 299:
 		return nil, fmt.Errorf("unhandled error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
 	}
 
