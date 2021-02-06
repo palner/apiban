@@ -13,12 +13,23 @@ _**UPDATES 2020-09-01**_
 
 ## Using the GO executable ##
 
+You can build the client using go, or just use the pre-built executable: (for Raspberry Pi users, there's a compiled executable in the release assets or see below for building on a Pi)
+
+### Quick and Easy Install Instructions ###
+
 1. Create the folder `/usr/local/bin/apiban`
+    * `mkdir /usr/local/bin/apiban`
 2. Download apiban-iptables-client to `/usr/local/bin/apiban/`
+    * `cd /usr/local/bin/apiban`
+    * `wget https://github.com/palner/apiban/raw/v0.6.1/clients/go/apiban-iptables-client`
 3. Download `config.json` to `/usr/local/bin/apiban/`
-4. Update `config.json` with your APIBAN key
-5. Run `chmod +x /usr/local/bin/apiban/apiban-iptables-client`
-6. Test with `./usr/local/bin/apiban/apiban-iptables-client`
+    * `cd /usr/local/bin/apiban`
+    * `wget https://raw.githubusercontent.com/palner/apiban/v0.6.1/clients/go/apiban-iptables/config.json`
+4. Using your favorite text editor, update `config.json` with your APIBAN key
+5. Give apiban-iptables-client execute permission
+    * `chmod +x /usr/local/bin/apiban/apiban-iptables-client`
+6. Test
+    * `./usr/local/bin/apiban/apiban-iptables-client`
 
 ### Notes ###
 
