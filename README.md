@@ -1,10 +1,40 @@
-# apiban #
+# APIBAN #
 
-REST API for sharing IP addresses sending unwanted SIP traffic
+REST API for identifying IP addresses sending unwanted SIP traffic
+
+**APIBAN** helps prevent unwanted SIP traffic by identifying addresses of known bad actors before they attack your system. Bad actors are collected through globally deployed honeypots and curated by [LOD](https://www.lod.com/).
 
 Visit <https://www.apiban.org/> for more information.
 
+## Block/Identify Traffic ##
+
+This API allows you to integrate and interact with **APIBAN** data.
+
+The data is provided in standard JSON responses and uses HTTP Status Codes to help determine results.
+
+**NOTE:** If you are looking to protect your PBX or SIP server without programming, you should use the [**APIBAN** client](https://github.com/palner/apiban/tree/master/clients/go) to automatically block traffic.
+
+## Using The API ##
+
+1. [obtain an API KEY](https://apiban.org/getkey.html) (the API KEY is used for all API requests)
+2. Integrate
+    * To protect your PBX automatically, without programming, use our [go api client](https://github.com/palner/apiban/tree/master/clients/go) to integrate with iptables.
+    * To integrate directly with [Kamailio](https://www.kamailio.org), see [Integration with Kamailio](#integration-into-kamailio).
+    * To integrate with [HOMER](http://sipcapture.org/), see [Integration with HOMER](#integration-with-homer).
+    * To integrate with SIP3, see [Integration with SIP3](#integration-with-sip3).
+    * To integrate with IPTABLES, see [Integration with IPTABLES](#integration-with-iptables).
+
+Once you have an API KEY, you can use the API to:
+
+* pull the full banned list
+* check specific IPs
+* pull changes since last full list
+
+The full **APIBAN** API documentation is available at <https://apiban.org/doc.html>.
+
 ## Integration into Kamailio ##
+
+**NOTE:** If you are looking to protect your PBX or SIP server without programming, you should use the [**APIBAN** client](https://github.com/palner/apiban/tree/master/clients/go) to automatically block traffic.
 
 [Kamailio](https://github.com/kamailio/kamailio) is an open source implementation of a SIP Signaling Server. SIP is an open standard protocol specified by the IETF. The core specification document is RFC3261.
 
@@ -94,7 +124,7 @@ Lastly, we can use these IPs to block unwanted traffic. For example, if you were
 		}
 ```
 
-**Bonus:** Want to run APIBAN at start-up? Using the *htable:mod-init* event_route built into Kamailio, you can pre-load the APIBAN htable at start-up:
+**Bonus:** Want to run **APIBAN** at start-up? Using the *htable:mod-init* event_route built into Kamailio, you can pre-load the **APIBAN** htable at start-up:
 
 ```
 event_route[htable:mod-init] {
@@ -120,7 +150,7 @@ Read more: <https://sip3.io/docs/tutorials/HowToInroduceUserDefinedAttribute.htm
 
 ## Integration with IPTABLES ##
 
-APIBAN provides two open source [clients](https://github.com/palner/apiban/tree/master/clients) for integrated into IPTABLES.
+**APIBAN** provides two open source [clients](https://github.com/palner/apiban/tree/master/clients) for integrated into IPTABLES.
 
 ## Getting Help ##
 
