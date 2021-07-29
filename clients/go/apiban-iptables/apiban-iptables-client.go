@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Fred Posner (palner.com)
+ * Copyright (C) 2020-2021 Fred Posner (palner.com)
  *
  * This file is part of APIBAN.org.
  *
@@ -29,6 +29,8 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
+	"time"
 
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/palner/apiban/clients/go/apiban"
@@ -49,6 +51,7 @@ type ApibanConfig struct {
 	APIKEY  string `json:"APIKEY"`
 	LKID    string `json:"LKID"`
 	VERSION string `json:"VERSION"`
+	FLUSH   string `json:"FLUSH"`
 
 	sourceFile string
 }
@@ -82,7 +85,8 @@ func main() {
 	}
 
 	log.Print("** Started APIBAN CLIENT")
-	log.Print("Licensed under GPLv2. See LICENSE for details.")
+	log.Print("** Licensed under GPLv2. See LICENSE for details.")
+	now := time.Now()
 
 	// Open our config file
 	apiconfig, err := LoadConfig()
@@ -93,6 +97,10 @@ func main() {
 	// if no APIKEY, exit
 	if apiconfig.APIKEY == "" {
 		log.Fatalln("Invalid APIKEY. Exiting.")
+	}
+
+	if apiconfig.APIKEY == "MY API KEY" {
+		log.Fatalln("Invalid APIKEY. Exiting. Go to apiban.org and get an api key.")
 	}
 
 	// allow cli of FULL to reset LKID to 100
@@ -110,6 +118,13 @@ func main() {
 	if len(apiconfig.LKID) == 0 {
 		log.Print("Resetting LKID")
 		apiconfig.LKID = "100"
+	}
+
+	// if no LKID, reset it to 100
+	if len(apiconfig.FLUSH) == 0 {
+		log.Print("Resetting FLUSH")
+		flushnow := now.Unix()
+		apiconfig.FLUSH = strconv.FormatInt(flushnow, 10)
 	}
 
 	// Go connect for IPTABLES
@@ -130,6 +145,20 @@ func main() {
 	if iptinit == "chain created" {
 		log.Print("APIBAN chain was created - Resetting LKID")
 		apiconfig.LKID = "100"
+	}
+
+	flushtime, _ := strconv.ParseInt(apiconfig.FLUSH, 10, 64)
+	flushdiff := now.Unix() - flushtime
+	if flushdiff >= 604800 {
+		err = ipt.ClearChain("filter", "APIBAN")
+		if err != nil {
+			log.Print("Flushing APIBAN chain failed. ", err.Error())
+		} else {
+			log.Print("APIBAN chain flushed")
+		}
+
+		apiconfig.LKID = "100"
+		apiconfig.FLUSH = strconv.FormatInt(now.Unix(), 10)
 	}
 
 	// Get list of banned ip's from APIBAN.org

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Fred Posner (palner.com)
+ * Copyright (C) 2020-2021 Fred Posner (palner.com)
  *
  * This file is part of APIBAN.org.
  *
