@@ -10,10 +10,10 @@ You can build the client using go, or just use the pre-built executable: (for Ra
     * `mkdir /usr/local/bin/apiban`
 2. Download apiban-iptables-client to `/usr/local/bin/apiban/`
     * `cd /usr/local/bin/apiban`
-    * `wget https://github.com/palner/apiban/raw/v0.6.1/clients/go/apiban-iptables-client`
+    * `wget https://github.com/palner/apiban/raw/v0.7.0/clients/go/apiban-iptables-client`
 3. Download `config.json` to `/usr/local/bin/apiban/`
     * `cd /usr/local/bin/apiban`
-    * `wget https://raw.githubusercontent.com/palner/apiban/v0.6.1/clients/go/apiban-iptables/config.json`
+    * `wget https://raw.githubusercontent.com/palner/apiban/v0.7.0/clients/go/apiban-iptables/config.json`
 4. Using your favorite text editor, update `config.json` with your APIBAN key
 5. Give apiban-iptables-client execute permission
     * `chmod +x /usr/local/bin/apiban/apiban-iptables-client`
@@ -21,6 +21,8 @@ You can build the client using go, or just use the pre-built executable: (for Ra
     * `./usr/local/bin/apiban/apiban-iptables-client`
 
 ### Notes ###
+
+**If upgrading from an older version, please add "FLUSH":"200" to your config.json.**
 
 Log output is saved to `/var/log/apiban-client`. Want to rotate the log? Here's an example...
 
