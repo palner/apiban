@@ -27,6 +27,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"runtime"
 	"strconv"
@@ -128,22 +129,33 @@ func main() {
 	}
 
 	// Go connect for IPTABLES
-	ipt, err := iptables.New()
+	ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	//	if err := initializeIPTables(ipt); err != nil {
-	//		log.Fatalln("failed to initialize IPTables:", err)
-	//	}
+	ip6t, err := iptables.NewWithProtocol(iptables.ProtocolIPv6)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	iptinit, err := initializeIPTables(ipt)
 	if err != nil {
 		log.Fatalln("failed to initialize IPTables:", err)
 	}
 
+	ip6tinit, err := initializeIPTables(ip6t)
+	if err != nil {
+		log.Fatalln("failed to initialize IP6Tables:", err)
+	}
+
 	if iptinit == "chain created" {
-		log.Print("APIBAN chain was created - Resetting LKID")
+		log.Print("APIBAN chain was created for iptables - Resetting LKID")
+		apiconfig.LKID = "100"
+	}
+
+	if ip6tinit == "chain created" {
+		log.Print("APIBAN chain was created for ip6tables - Resetting LKID")
 		apiconfig.LKID = "100"
 	}
 
@@ -152,9 +164,16 @@ func main() {
 	if flushdiff >= 604800 {
 		err = ipt.ClearChain("filter", "APIBAN")
 		if err != nil {
-			log.Print("Flushing APIBAN chain failed. ", err.Error())
+			log.Print("Flushing ipv4 APIBAN chain failed. ", err.Error())
 		} else {
-			log.Print("APIBAN chain flushed")
+			log.Print("APIBAN ipv4 chain flushed")
+		}
+
+		err = ip6t.ClearChain("filter", "APIBAN")
+		if err != nil {
+			log.Print("Flushing ipv6 APIBAN chain failed. ", err.Error())
+		} else {
+			log.Print("APIBAN ipv6 chain flushed")
 		}
 
 		apiconfig.LKID = "100"
@@ -178,12 +197,22 @@ func main() {
 	}
 
 	for _, ip := range res.IPs {
-		blockedip := ip + "/32"
-		err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", targetChain)
+		blockedip := ip
+		proto, err := checkIPAddressv4(blockedip)
 		if err != nil {
-			log.Print("Adding rule failed. ", err.Error())
+			log.Print("Thats weird...", blockedip, "is not a valid ip address.")
 		} else {
-			log.Print("Blocking ", blockedip)
+			if proto == "ipv6" {
+				err = ip6t.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", targetChain)
+			} else {
+				err = ipt.AppendUnique("filter", "APIBAN", "-s", blockedip, "-d", "0/0", "-j", targetChain)
+			}
+
+			if err != nil {
+				log.Print("Adding rule failed. ", err.Error())
+			} else {
+				log.Print("Blocking ", blockedip)
+			}
 		}
 	}
 
@@ -194,6 +223,22 @@ func main() {
 	}
 
 	log.Print("** Done. Exiting.")
+}
+
+func checkIPAddressv4(ip string) (string, error) {
+	if net.ParseIP(ip) == nil {
+		return "", errors.New("Not an IP address")
+	}
+	for i := 0; i < len(ip); i++ {
+		switch ip[i] {
+		case '.':
+			return "ipv4", nil
+		case ':':
+			return "ipv6", nil
+		}
+	}
+
+	return "", errors.New("unknown error")
 }
 
 // LoadConfig attempts to load the APIBAN configuration file from various locations
