@@ -23,6 +23,7 @@ The data is provided in standard JSON responses and uses HTTP Status Codes to he
     * To integrate with [HOMER](http://sipcapture.org/), see [Integration with HOMER](#integration-with-homer).
     * To integrate with SIP3, see [Integration with SIP3](#integration-with-sip3).
     * To integrate with IPTABLES, see [Integration with IPTABLES](#integration-with-iptables).
+    * To integrate with [OpenSIPS](https://opensips.org), see [Integration with OpenSIPS](#integration-with-opensips).
 
 Once you have an API KEY, you can use the API to:
 
