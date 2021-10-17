@@ -10,8 +10,8 @@ Installation of the systemd service
 
 1. Download apiban-iptables.service and apiban-iptables.timer to `/lib/systemd/system/`
     * `cd /lib/systemd/system/`
-    * `wget https://github.com/palner/apiban/raw/v0.7.0/clients/go/hack/apiban-iptables.service`
-    * `wget https://github.com/palner/apiban/raw/v0.7.0/clients/go/hack/apiban-iptables.timer`
+    * `wget https://github.com/palner/apiban/raw/v0.7.0/clients/go/systemd/apiban-iptables.service`
+    * `wget https://github.com/palner/apiban/raw/v0.7.0/clients/go/systemd/apiban-iptables.timer`
 2. Enable Service and Timer
     * `systemctl enable apiban-iptables.service`
     * `systemctl enable apiban-iptables.timer`
