@@ -22,7 +22,7 @@ You can build the client using go, or just use the pre-built executable: (for Ra
 
 ### Notes ###
 
-> If upgrading from an older version, please add "FLUSH":"200" to your config.json.
+**If upgrading from an older version, please add "FLUSH":"200" to your config.json.**
 
 ## Logs ##
 
