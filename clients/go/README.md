@@ -24,7 +24,13 @@ You can build the client using go, or just use the pre-built executable: (for Ra
 
 **If upgrading from an older version, please add "FLUSH":"200" to your config.json.**
 
-Log output is saved to `/var/log/apiban-client`. Want to rotate the log? Here's an example...
+## Logs ##
+
+Log output is saved to `/var/log/apiban-client`. 
+
+### Log Rotation ###
+
+Want to rotate the log? Here's an example...
 
 ```bash
 cat > /etc/logrotate.d/apiban-client << EOF
@@ -36,7 +42,8 @@ cat > /etc/logrotate.d/apiban-client << EOF
 }
 EOF
 ```
-
+## Automation ##
+### Cron ###
 Example crontab running every 4 min...
 
 ```bash
@@ -44,8 +51,9 @@ Example crontab running every 4 min...
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 */4 * * * * /usr/local/bin/apiban/apiban-iptables-client >/dev/null 2>&1
 ```
+### systemd ###
 
-See the [hack](hack/) directory for example systemd units.
+See the [systemd](systemd/) directory for example systemd units.
 
 ## Building on Raspbian Buster ##
 
