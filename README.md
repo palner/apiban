@@ -1,4 +1,4 @@
-# APIBAN #
+# APIBAN
 
 REST API for identifying IP addresses sending unwanted SIP traffic
 
@@ -6,7 +6,22 @@ REST API for identifying IP addresses sending unwanted SIP traffic
 
 Visit <https://www.apiban.org/> for more information.
 
-## Block/Identify Traffic ##
+## Table of Contents
+
+* [Introduction](#introduction)
+* [Using the API](#using-the-api)
+* [Integration with Kamailio](#integration-into-kamailio)
+* [Integration with HOMER](#integration-with-homer)
+* [Integration with SIP3](#integration-with-sip3)
+* [Integration with IPTABLES](#integration-with-iptables)
+* [Integration with OpenSIPS](#integration-with-opensips)
+* [Integration with pfSense/opnSense](#integration-with-pfsense)
+* [Getting Help](#getting-help)
+* [Warranty](#warranty)
+
+## Introduction
+
+APIBAn helps you block and identify unwanted traffic.
 
 This API allows you to integrate and interact with **APIBAN** data.
 
@@ -14,16 +29,10 @@ The data is provided in standard JSON responses and uses HTTP Status Codes to he
 
 **NOTE:** If you are looking to protect your PBX or SIP server without programming, you should use the [**APIBAN** client](https://github.com/palner/apiban/tree/master/clients/go) to automatically block traffic.
 
-## Using The API ##
+## Using The API
 
 1. [obtain an API KEY](https://apiban.org/getkey.html) (the API KEY is used for all API requests)
 2. Integrate
-    * To protect your PBX automatically, without programming, use our [go api client](https://github.com/palner/apiban/tree/master/clients/go) to integrate with iptables.
-    * To integrate directly with [Kamailio](https://www.kamailio.org), see [Integration with Kamailio](#integration-into-kamailio).
-    * To integrate with [HOMER](http://sipcapture.org/), see [Integration with HOMER](#integration-with-homer).
-    * To integrate with SIP3, see [Integration with SIP3](#integration-with-sip3).
-    * To integrate with IPTABLES, see [Integration with IPTABLES](#integration-with-iptables).
-    * To integrate with [OpenSIPS](https://opensips.org), see [Integration with OpenSIPS](#integration-with-opensips).
 
 Once you have an API KEY, you can use the API to:
 
@@ -31,15 +40,17 @@ Once you have an API KEY, you can use the API to:
 * check specific IPs
 * pull changes since last full list
 
+To protect your PBX automatically, without programming, use our [go api client](https://github.com/palner/apiban/tree/master/clients/go) to integrate with iptables. **This is the easiest way to use APIBAN on a single box.**
+
 The full **APIBAN** API documentation is available at <https://apiban.org/doc.html>.
 
-## Integration into Kamailio ##
+## Integration into Kamailio
 
 **NOTE:** If you are looking to protect your PBX or SIP server without programming, you should use the [**APIBAN** client](https://github.com/palner/apiban/tree/master/clients/go) to automatically block traffic.
 
 [Kamailio](https://github.com/kamailio/kamailio) is an open source implementation of a SIP Signaling Server. SIP is an open standard protocol specified by the IETF. The core specification document is RFC3261.
 
-### Blocking Banned IPs ###
+### Blocking Banned IPs
 
 A loop is used to cycle through the banned IPs. On first download, this list can be quite large and `max_while_loops` will need to be large enough to handle the list.
 
@@ -134,7 +145,7 @@ event_route[htable:mod-init] {
 }
 ```
 
-## Integration with HOMER ##
+## Integration with HOMER
 
 [HOMER](https://github.com/sipcapture/homer) is a robust, carrier-grade, scalable Packet and Event capture system and VoiP/RTC Monitoring Application based on the HEP/EEP protocol and ready to process & store insane amounts of signaling, rtc events, logs and statistics with instant search, end-to-end analysis and drill-down capabilities.
 
@@ -142,7 +153,7 @@ Homer implements [APIBan](https://github.com/sipcapture/hepsub-apiban) interacti
 
 Read more: <https://github.com/sipcapture/hepsub-apiban>
 
-## Integration with SIP3 ##
+## Integration with SIP3
 
 [SIP3](https://sip3.io/) is an end-to-end solution for real-time monitor, analysis and troubleshooting of network performance in large volumes of traffic.
 
@@ -150,11 +161,11 @@ Read more: <https://github.com/sipcapture/hepsub-apiban>
 
 Read more: <https://sip3.io/docs/tutorials/HowToInroduceUserDefinedAttribute.html>
 
-## Integration with IPTABLES ##
+## Integration with IPTABLES
 
 **APIBAN** provides two open source [clients](https://github.com/palner/apiban/tree/master/clients) for integrated into IPTABLES.
 
-## Integration with OpenSIPS ##
+## Integration with OpenSIPS
 
 You will need to load the following modules (if not already loaded):
 
@@ -227,6 +238,7 @@ route[APIBAN] {
 ```
 
 Let's create a timer-route in order to get updates from APIBAN. Change the interval of 180 seconds to whatever works best for you. Remember that APIBAN has a limit of 11 requests every 2 minutes, adjust accordingly if you are using the same key for several instances.
+
 ```
 timer_route[apiban_update, 180] {
   route(APIBAN);
@@ -234,6 +246,7 @@ timer_route[apiban_update, 180] {
 ```
 
 [Optional]: Let's create a startup-route (or modify your current one) in order to get the data from APIBAN when OpenSIPS is starting up.
+
 ```
 startup_route {
   route(APIBAN);
@@ -249,6 +262,23 @@ if (cache_fetch("local:apiban", "$si", $var(ip_val))) {
 }
 ```
 
-## Getting Help ##
+## Integration with pfSense
+
+APIBAN provides an _ipset_ for easy integration in pfSense, opnsense, or any software using ipsets. The simple `GET` is:
+
+`https://apiban.org/ipset/[APIKEY]/list`
+
+More information is documented at <https://apiban.org/doc.html#ipset>.
+
+Example tutorials for adding ipsets:
+
+* [Blocking malicious IPs with OPNsense and external lists](https://www.allthingstech.ch/blocking-malicious-ips-with-opnsense/)
+* [Block Malicious IPs in pfSense](https://davidshomelab.com/block-malicious-ips-in-pfsense/)
+
+## Getting Help
 
 Help is provided by LOD (<https://www.lod.com>) and an APIBAN room ([#apiban:matrix.lod.com](https://matrix.to/#/#apiban:matrix.lod.com)) is available on the LOD Matrix homeserver. The software is provided under the GPLv2 license.
+
+## Warranty
+
+ABIBAN data is provided in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
