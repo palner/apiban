@@ -26,7 +26,7 @@ You can build the client using go, or just use the pre-built executable: (for Ra
 
 ## Logs ##
 
-Log output is saved to `/var/log/apiban-client`. 
+Log output is saved to `/var/log/apiban-client.log`. 
 
 ### Log Rotation ###
 
