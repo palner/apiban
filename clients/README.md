@@ -1,5 +1,7 @@
 # Apiban Clients #
 
+**APIBAN is made possible by the generosity of our [sponsors](https://apiban.org/doc.html#sponsors).**
+
 Sample clients have been provided in a simple bash script or golang (go). The basic concept would be to create a chain in IPTABLES called APIBAN and have the clients executed via `crontab`.
 
 The GO client has been tested more than the bash script. It is recommended that the bash only be used as a template.

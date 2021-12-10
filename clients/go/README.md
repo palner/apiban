@@ -1,5 +1,7 @@
 # Apiban Clients #
 
+**APIBAN is made possible by the generosity of our [sponsors](https://apiban.org/doc.html#sponsors).**
+
 ## Using the GO executable ##
 
 You can build the client using go, or just use the pre-built executable: (for Raspberry Pi users, there's a compiled executable in the release assets or see below for building on a Pi)
