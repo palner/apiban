@@ -6,6 +6,8 @@ REST API for identifying IP addresses sending unwanted SIP traffic
 
 Visit <https://www.apiban.org/> for more information.
 
+**APIBAN is made possible by the generosity of our [sponsors](https://apiban.org/doc.html#sponsors).**
+
 ## Table of Contents
 
 * [Introduction](#introduction)
