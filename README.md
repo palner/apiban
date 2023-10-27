@@ -68,11 +68,11 @@ loadmodule "jansson.so"
 loadmodule "rtimer.so"
 ```
 
-The following htables should be created (you can increase the size of `apiban` as needed):
+The following htables should be created (you can increase the size of `apiban` as needed). The autoexpire field allows apiban entries to expire as normal (from the banned check):
 
 ```
-modparam("htable", "htable", "apiban=>size=11;")
-modparam("htable", "htable", "apibanctl=>size=1;initval=0;")
+modparam("htable", "htable", "apiban=>size=14;autoexpire=604800;")
+modparam("htable", "htable", "apibanctl=>size=1;initval=100;")
 ```
 
 In this example, let's set an rtimer to run every 5 minutes:
@@ -91,12 +91,7 @@ route[APIBAN] {
 
 	// replace MYAPIKEY with your apiban.org API key.
 	$var(apikey) = "MYAPIKEY";
-
-	if($sht(apibanctl=>ID) == 0) {
-		$var(apiget) = "https://apiban.org/api/" + $var(apikey) + "/banned";
-	} else {
-		$var(apiget) = "https://apiban.org/api/" + $var(apikey) + "/banned/" + $sht(apibanctl=>ID);
-	}
+	$var(apiget) = "https://apiban.org/api/" + $var(apikey) + "/banned/" + $sht(apibanctl=>ID);
 
 	xlog("L_INFO","APIBAN: Sending API request to $var(apiget)\n");
 	http_client_query("$var(apiget)", "$var(banned)");
