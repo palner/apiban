@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -52,10 +53,20 @@ type Entry struct {
 	IPs []string `json:"ipaddress"`
 }
 
+type ApiGetJson struct {
+	SetType string `json:"set"`
+	ID      string `json:"id"`
+}
+
+type ApiGetCheck struct {
+	SetType string `json:"set"`
+	IP      string `json:"ipaddress"`
+}
+
 // Banned returns a set of banned addresses, optionally limited to the
 // specified startFrom ID.  If no startFrom is supplied, the entire current list will
 // be pulled.
-func Banned(key string, startFrom string) (*Entry, error) {
+func Banned(key string, startFrom string, set string) (*Entry, error) {
 	if key == "" {
 		return nil, errors.New("API Key is required")
 	}
@@ -64,12 +75,27 @@ func Banned(key string, startFrom string) (*Entry, error) {
 		startFrom = "100" // NOTE: arbitrary ID copied from reference source
 	}
 
+	if set == "" {
+		set = "sip"
+	}
+
+	p := &ApiGetJson{
+		ID:      startFrom,
+		SetType: set,
+	}
+
+	p_json, err := json.Marshal(p)
+	if err != nil {
+		return nil, errors.New("error making json payload")
+	}
+
 	out := &Entry{
 		ID: startFrom,
 	}
 
+	url := RootURL + "get"
 	for {
-		e, err := queryServer(http.DefaultClient, fmt.Sprintf("%s%s/banned/%s", RootURL, key, out.ID))
+		e, err := queryServerv2(key, p_json, url)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +117,7 @@ func Banned(key string, startFrom string) (*Entry, error) {
 }
 
 // Check queries APIBAN.org to see if the provided IP address is blocked.
-func Check(key string, ip string) (bool, error) {
+func Check(key string, ip string, set string) (bool, error) {
 	if key == "" {
 		return false, errors.New("API Key is required")
 	}
@@ -99,7 +125,22 @@ func Check(key string, ip string) (bool, error) {
 		return false, errors.New("IP address is required")
 	}
 
-	entry, err := queryServer(http.DefaultClient, fmt.Sprintf("%s%s/check/%s", RootURL, key, ip))
+	if set == "" {
+		set = "sip"
+	}
+
+	p := &ApiGetCheck{
+		IP:      ip,
+		SetType: set,
+	}
+
+	p_json, err := json.Marshal(p)
+	if err != nil {
+		return false, errors.New("error making json payload")
+	}
+
+	url := RootURL + "check"
+	entry, err := queryServerv2(key, p_json, url)
 	if err == ErrBadRequest {
 		// Not blocked
 		return false, nil
@@ -140,6 +181,45 @@ func queryServer(c *http.Client, u string) (*Entry, error) {
 		return nil, fmt.Errorf("server error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
 	case resp.StatusCode > 299:
 		return nil, fmt.Errorf("unhandled error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, u)
+	}
+
+	entry := new(Entry)
+	if err = json.NewDecoder(resp.Body).Decode(entry); err != nil {
+		return nil, fmt.Errorf("failed to decode server response: %s", err.Error())
+	}
+
+	return entry, nil
+}
+
+func queryServerv2(key string, p_json []byte, url string) (*Entry, error) {
+	sendbody := strings.NewReader(string(p_json))
+	bearer := "Bearer " + key
+	req, err := http.NewRequest("POST", url, sendbody)
+	req.Header.Add("Authorization", bearer)
+	if err != nil {
+		// handle err
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("query error: %s", err.Error())
+	}
+	defer resp.Body.Close()
+
+	switch {
+	case resp.StatusCode == http.StatusBadRequest ||
+		resp.StatusCode == http.StatusNotFound ||
+		resp.StatusCode == http.StatusForbidden:
+		return processBadRequest(resp)
+	case resp.StatusCode == http.StatusOK:
+		break
+	case resp.StatusCode > 400 && resp.StatusCode < 500:
+		return nil, fmt.Errorf("client error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, url)
+	case resp.StatusCode >= 500:
+		return nil, fmt.Errorf("server error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, url)
+	case resp.StatusCode > 299:
+		return nil, fmt.Errorf("unhandled error (%d) from apiban.org: %s from %q", resp.StatusCode, resp.Status, url)
 	}
 
 	entry := new(Entry)

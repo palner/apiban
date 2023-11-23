@@ -245,7 +245,7 @@ func TestBanned(t *testing.T) {
 			}
 
 			// Act
-			result, err := Banned(tc.input.key, tc.input.startFrom)
+			result, err := Banned(tc.input.key, tc.input.startFrom, "")
 
 			// Assert
 			assert.Equal(t, tc.expected.data, result)
@@ -374,7 +374,7 @@ func TestCheck(t *testing.T) {
 			}
 
 			// Act
-			result, err := Check(tc.input.key, tc.input.ip)
+			result, err := Check(tc.input.key, tc.input.ip, "")
 
 			// Assert
 			assert.Equal(t, tc.expected.data, result)

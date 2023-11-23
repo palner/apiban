@@ -175,7 +175,7 @@ func main() {
 	}
 
 	// Get list of banned ip's from APIBAN.org
-	res, err := apiban.Banned(apiconfig.APIKEY, apiconfig.LKID)
+	res, err := apiban.Banned(apiconfig.APIKEY, apiconfig.LKID, apiconfig.SET)
 	if err != nil {
 		log.Fatalln("failed to get banned list:", err)
 	}
