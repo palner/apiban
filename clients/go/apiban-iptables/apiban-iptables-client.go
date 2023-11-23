@@ -22,11 +22,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 	"strconv"
@@ -39,19 +41,26 @@ import (
 var configFileLocation string
 var logFile string
 var targetChain string
+var skipVerify string
 
 func init() {
 	flag.StringVar(&targetChain, "target", "REJECT", "target chain for matching entries")
 	flag.StringVar(&configFileLocation, "config", "", "location of configuration file")
 	flag.StringVar(&logFile, "log", "/var/log/apiban-client.log", "location of log file or - for stdout")
+	flag.StringVar(&skipVerify, "verify", "true", "set to false to skip verify of tls cert")
+
+	if skipVerify == "false" {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 }
 
 // ApibanConfig is the structure for the JSON config file
 type ApibanConfig struct {
-	APIKEY  string `json:"APIKEY"`
-	LKID    string `json:"LKID"`
-	VERSION string `json:"VERSION"`
-	FLUSH   string `json:"FLUSH"`
+	APIKEY  string `json:"apikey"`
+	LKID    string `json:"lkid"`
+	VERSION string `json:"version"`
+	FLUSH   string `json:"flush"`
+	SET     string `json:"set"`
 
 	sourceFile string
 }
@@ -92,15 +101,19 @@ func main() {
 	apiconfig, err := LoadConfig()
 	if err != nil {
 		log.Fatalln(err)
+		runtime.Goexit()
 	}
 
 	// if no APIKEY, exit
 	if apiconfig.APIKEY == "" {
 		log.Fatalln("Invalid APIKEY. Exiting.")
+		runtime.Goexit()
 	}
 
+	// if no APIKEY, exit
 	if apiconfig.APIKEY == "MY API KEY" {
 		log.Fatalln("Invalid APIKEY. Exiting. Go to apiban.org and get an api key.")
+		runtime.Goexit()
 	}
 
 	// allow cli of FULL to reset LKID to 100

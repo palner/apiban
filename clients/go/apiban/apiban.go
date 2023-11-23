@@ -40,7 +40,7 @@ var (
 // NOTE: this is used by the server to indicate both that an IP address is not
 // blocked (when calling Check) and that the list is complete (when calling
 // Banned)
-var ErrBadRequest = errors.New("Bad Request")
+var ErrBadRequest = errors.New("bad request")
 
 // Entry describes a set of blocked IP addresses from APIBAN.org
 type Entry struct {
@@ -123,7 +123,7 @@ func Check(key string, ip string) (bool, error) {
 func queryServer(c *http.Client, u string) (*Entry, error) {
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, fmt.Errorf("Query Error: %s", err.Error())
+		return nil, fmt.Errorf("query error: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
